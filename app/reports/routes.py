@@ -32,4 +32,4 @@ def report_pdf():
 
     output.seek(0)
     filename = f'relatorio_acessos_{datetime.now():%Y%m%d_%H%M}.pdf'
-    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    return send_file(output, as_attachment=False, download_name=filename, mimetype='application/pdf')
