@@ -20,7 +20,7 @@ def report_pdf():
         end = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
         query = query.filter(AccessLog.entry_time < end)
 
-    logs = query.order_by(AccessLog.entry_time.desc()).all()
+    logs = query.order_by(AccessLog.entry_time.asc()).all()
     html = render_template(
         'reports/pdf_lite.html', logs=logs, now=datetime.now(),
         start_date=start_date, end_date=end_date

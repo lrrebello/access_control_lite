@@ -2,3 +2,4 @@ Flask
 Flask-SQLAlchemy
 xhtml2pdf
 python-dotenv
+gunicorn
