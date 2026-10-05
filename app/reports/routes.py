@@ -11,8 +11,9 @@ from app.reports import reports
 
 @reports.route('/report/pdf')
 def report_pdf():
-    start_date = request.args.get('start_date', '').strip()
-    end_date = request.args.get('end_date', '').strip()
+    today = datetime.now().strftime('%Y-%m-%d')
+    start_date = request.args.get('start_date', '').strip() or today
+    end_date = request.args.get('end_date', '').strip() or today
     query = AccessLog.query
 
     if start_date:

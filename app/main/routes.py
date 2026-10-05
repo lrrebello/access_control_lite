@@ -55,6 +55,7 @@ def dashboard():
         search_query=search_query, total_active=len(active_logs),
         people_inside=sum(log.total_people for log in active_logs),
         today_entries=today_entries, today_exits=today_exits,
+        report_date=today_start.strftime('%Y-%m-%d'),
     )
 
 
