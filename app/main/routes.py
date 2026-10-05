@@ -4,7 +4,7 @@ from flask import jsonify, redirect, render_template, request, url_for, flash
 
 from app import db
 from app.main import main
-from app.models import AccessLog, Companion
+from app.models import AccessLog
 
 
 @main.app_template_filter('nl2br')
@@ -25,7 +25,9 @@ def dashboard():
         query = query.filter(
             (AccessLog.vehicle_plate.ilike(f'%{search_query}%')) |
             (AccessLog.driver_name.ilike(f'%{search_query}%')) |
-            (AccessLog.company.ilike(f'%{search_query}%'))
+            (AccessLog.company.ilike(f'%{search_query}%')) |
+            (AccessLog.product.ilike(f'%{search_query}%')) |
+            (AccessLog.destination.ilike(f'%{search_query}%'))
         )
 
     if filter_type == 'active':
@@ -71,9 +73,10 @@ def lookup_access_data():
     return jsonify({
         'found': True,
         'vehicle_type': last_access.vehicle_type,
-        'company': last_access.company or '',
+        'product': last_access.product or last_access.company or '',
+        'destination': last_access.destination or '',
+        'movement': last_access.movement or '',
         'driver_name': last_access.driver_name,
-        'driver_doc': last_access.driver_doc,
     })
 
 
@@ -90,33 +93,26 @@ def new_access():
         vehicle_plate = 'PEDESTRE'
     trailer_plate = None
     driver_name = request.form.get('driver_name', '').strip()
-    driver_doc = request.form.get('driver_doc', '').strip()
-    company = request.form.get('company', '').strip() or 'Não informada'
+    product = request.form.get('product', '').strip()
+    destination = request.form.get('destination', '').strip()
+    movement = ' / '.join(request.form.getlist('movement'))
 
     if vehicle_type != 'pedestre' and not vehicle_plate:
         flash('A matrícula é obrigatória para veículos.', 'danger')
         return redirect(url_for('main.dashboard'))
-    if not driver_name or not driver_doc:
-        flash('Nome e documento são obrigatórios.', 'danger')
+    if not driver_name or not product or not destination or not movement:
+        flash('Nome, produto, destino e tipo de movimentação são obrigatórios.', 'danger')
         return redirect(url_for('main.dashboard'))
 
     log = AccessLog(
         vehicle_plate=vehicle_plate, trailer_plate=trailer_plate,
         vehicle_type=vehicle_type, driver_name=driver_name,
-        driver_doc=driver_doc, company=company,
+        driver_doc='', company=product, product=product,
+        destination=destination, movement=movement,
         observations=request.form.get('observations', '').strip() or None,
     )
     db.session.add(log)
     db.session.flush()
-
-    names = request.form.getlist('companion_name[]')
-    docs = request.form.getlist('companion_doc[]')
-    for name, document in zip(names, docs):
-        if name.strip() and document.strip():
-            db.session.add(Companion(
-                access_log_id=log.id,
-                name=name.strip(), document=document.strip()
-            ))
 
     db.session.commit()
     flash('Entrada registrada com sucesso.', 'success')
@@ -148,8 +144,11 @@ def edit_access(log_id):
         log.trailer_plate = request.form.get('trailer_plate', '').strip().upper() or None
         log.vehicle_type = request.form.get('vehicle_type', 'ligeiro')
         log.driver_name = request.form.get('driver_name', '').strip()
-        log.driver_doc = request.form.get('driver_doc', '').strip()
-        log.company = request.form.get('company', '').strip() or 'Não informada'
+        log.driver_doc = ''
+        log.product = request.form.get('product', '').strip()
+        log.company = log.product or 'Não informada'
+        log.destination = request.form.get('destination', '').strip()
+        log.movement = ' / '.join(request.form.getlist('movement'))
         log.observations = request.form.get('observations', '').strip() or None
         entry_time = request.form.get('entry_time')
         exit_time = request.form.get('exit_time')
@@ -157,16 +156,6 @@ def edit_access(log_id):
             log.entry_time = datetime.strptime(entry_time, '%Y-%m-%dT%H:%M')
         log.exit_time = datetime.strptime(exit_time, '%Y-%m-%dT%H:%M') if exit_time else None
 
-        Companion.query.filter_by(access_log_id=log.id).delete()
-        for name, document in zip(
-            request.form.getlist('companion_name[]'),
-            request.form.getlist('companion_doc[]')
-        ):
-            if name.strip() and document.strip():
-                db.session.add(Companion(
-                    access_log_id=log.id,
-                    name=name.strip(), document=document.strip()
-                ))
         db.session.commit()
         flash('Registro atualizado com sucesso.', 'success')
         return redirect(url_for('main.dashboard'))

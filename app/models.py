@@ -10,6 +10,9 @@ class AccessLog(db.Model):
     driver_name = db.Column(db.String(100), nullable=False)
     driver_doc = db.Column(db.String(50), nullable=False)
     company = db.Column(db.String(100), nullable=False)
+    product = db.Column(db.String(150), nullable=False, default='')
+    destination = db.Column(db.String(150), nullable=False, default='')
+    movement = db.Column(db.String(40), nullable=False, default='')
     entry_time = db.Column(db.DateTime, nullable=False, default=datetime.now)
     exit_time = db.Column(db.DateTime)
     observations = db.Column(db.Text)
@@ -21,7 +24,7 @@ class AccessLog(db.Model):
 
     @property
     def total_people(self):
-        return 1 + len(self.companions)
+        return 1
 
     @property
     def duration(self):

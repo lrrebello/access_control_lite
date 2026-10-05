@@ -1,1 +1,155 @@
-<!doctype html><html><head><meta charset="utf-8"><style>@page{size:landscape;margin:24px}body{font-family:Helvetica,Arial,sans-serif;color:#222;font-size:9px}h1{font-size:18px;margin:0 0 6px}p{margin:3px 0;color:#555}table{width:100%;border-collapse:collapse;margin-top:14px}th{background:#343a40;color:#fff;text-align:left}th,td{border:1px solid #bbb;padding:5px;vertical-align:top}.muted{color:#666;font-size:8px}.status{white-space:nowrap}</style></head><body><h1>RELATÓRIO DE CONTROLE DE ACESSO</h1><p>Período: {{ start_date or 'Todos' }} até {{ end_date or 'Todos' }} | Gerado em {{ now.strftime('%d/%m/%Y %H:%M') }}</p><table><thead><tr><th>Matrícula</th><th>Reboque</th><th>Tipo</th><th>Condutor</th><th>Documento</th><th>Empresa</th><th>Entrada</th><th>Saída</th><th>Status</th><th>Observações</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.vehicle_plate }}</td><td>{{ log.trailer_plate or '' }}</td><td>{{ log.vehicle_type }}</td><td>{{ log.driver_name }}</td><td>{{ log.driver_doc }}</td><td>{{ log.company }}</td><td>{{ log.entry_time.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ log.exit_time.strftime('%d/%m/%Y %H:%M') if log.exit_time else '' }}</td><td class="status">{{ 'No local - ' ~ log.duration if not log.exit_time else log.duration }}</td><td>{{ log.observations or '' }}{% for companion in log.companions %}<br><span class="muted">Acompanhante: {{ companion.name }} ({{ companion.document }})</span>{% endfor %}</td></tr>{% else %}<tr><td colspan="10">Nenhum registro no período.</td></tr>{% endfor %}</tbody></table></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@page { size: A4 landscape; margin: 20mm 5mm 10mm 17mm; }
+* { box-sizing: border-box; }
+body { font-family: Helvetica, Arial, sans-serif; color: #222; font-size: 8pt; margin: 0; }
+
+.sheet { width: 100%; page-break-after: always; break-after: page; }
+.sheet:last-child { page-break-after: auto; break-after: auto; }
+
+.header { width: 100%; margin: 0 0 2.2mm 0; }
+.header-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.header-table td { border: 0; padding: 0; }
+.logo-cell { width: 31%; vertical-align: top; }
+.title-cell {
+  text-align: left;
+  font-size: 12pt;
+  font-weight: bold;
+  letter-spacing: 0.2pt;
+  vertical-align: middle;
+  height: 13mm;
+  padding: 0 2mm;
+}
+.meta-empty { height: 11mm; }
+.meta-cell { width: 27%; vertical-align: bottom; text-align: right; height: 12mm; padding-bottom: 0; }
+.logo { width: 52mm; height: 24mm; display: block; }
+
+.meta { width: 100%; margin-left: auto; border: 0.7pt solid #555; border-collapse: collapse; font-size: 9pt; }
+.meta td { border: 0.7pt solid #555; height: 6mm; padding: 0 1.5mm; vertical-align: middle; }
+.meta .label { width: 46.3%; text-align: center; }
+.meta .data-val { text-align: center; }
+.meta .turno-val {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 10pt;
+}
+
+.client-row { width: 100%; border: 0.7pt solid #555; border-collapse: collapse; margin: 0 0 1.4mm 0; }
+.client-row td { height: 7mm; padding: 0.6mm 1.2mm; border-right: 0.7pt solid #555; font-size: 10pt; vertical-align: middle; }
+.client-row td:last-child { border-right: 0; }
+.client { width: 67%; }
+.location { width: 33%; }
+
+table.register { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.register th, .register td {
+  border: 0.6pt solid #555;
+  padding: 0 0.5mm;
+  line-height: 1;
+}
+.register th {
+  text-align: center;
+  font-weight: normal;
+  font-size: 11pt;
+  vertical-align: middle;
+}
+.register thead { display: table-header-group; }
+.register thead tr:first-child th { height: 9mm; }
+.register thead tr:last-child th { height: 4.6mm; font-size: 8pt; }
+.register td {
+  height: 4.5mm;
+  font-size: 9.5pt;
+  line-height: 1.15;
+  vertical-align: middle;
+  padding: 0.7mm 0.5mm 0.3mm;
+  text-align: left;
+  overflow: hidden;
+}
+.register tbody tr { height: 4.5mm; }
+.register .plate { width: 10%; }
+.register .product { width: 21%; }
+.register .driver { width: 28%; }
+.register .hours { width: 14%; }
+.register .time { width: 7%; }
+.register .load { width: 12.5%; }
+.register .destination { width: 14.5%; }
+.register .blank { color: #333; }
+.subhead { display: block; margin: 0; font-size: 5.4pt; line-height: 1; }
+.center { text-align: center; }
+</style>
+<base target="_blank">
+</head>
+<body>
+{% set rows_per_page = 29 %}
+{% set n_logs = logs|length %}
+{% set page_count = [((n_logs - 1) // rows_per_page) + 1, 1]|max %}
+{% for p in range(page_count) %}
+{% set page_logs = logs[p * rows_per_page : (p + 1) * rows_per_page] %}
+<div class="sheet">
+  <div class="header">
+    <table class="header-table">
+      <tr>
+        <td class="logo-cell" rowspan="2"><img class="logo" src="{{ logo_path }}"></td>
+        <td class="title-cell" colspan="2">REGISTO DE MOVIMENTO DE VIATURAS</td>
+      </tr>
+      <tr>
+        <td class="meta-empty"></td>
+        <td class="meta-cell">
+          <table class="meta">
+            <tr>
+              <td class="label">DATA:</td>
+              <td class="data-val">{{ start_date or now.strftime('%d/%m/%Y') }}</td>
+            </tr>
+            <tr>
+              <td class="label">TURNO:</td>
+              <td class="turno-val">às</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <table class="client-row">
+    <tr>
+      <td class="client">CLIENTE: {{ client_name }}</td>
+      <td class="location">LOCAL: {{ location_name }}</td>
+    </tr>
+  </table>
+  <table class="register">
+    <thead>
+      <tr>
+        <th class="plate" rowspan="2">MATRÍCULA</th>
+        <th class="product" rowspan="2">PRODUTO</th>
+        <th class="driver" rowspan="2">CONDUTOR</th>
+        <th class="hours" colspan="2">HORAS</th>
+        <th class="load" rowspan="2">C/D</th>
+        <th class="destination" rowspan="2">DESTINO</th>
+      </tr>
+      <tr>
+        <th class="time">ENTRADA</th>
+        <th class="time">SAÍDA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in page_logs %}
+      <tr>
+        <td>{{ log.vehicle_plate }}</td>
+        <td>{{ log.product or log.company }}</td>
+        <td>{{ log.driver_name }}</td>
+        <td class="center">{{ log.entry_time.strftime('%H:%M') }}</td>
+        <td class="center">{{ log.exit_time.strftime('%H:%M') if log.exit_time else '' }}</td>
+        <td>{{ log.movement }}{% if log.observations %}<span class="subhead">{{ log.observations }}</span>{% endif %}</td>
+        <td>{{ log.destination }}</td>
+      </tr>
+      {% endfor %}
+      {% for i in range(rows_per_page - (page_logs|length)) %}
+      <tr><td class="blank"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+</body>
+</html>

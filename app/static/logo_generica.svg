@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="250" viewBox="0 0 900 250">
+  <rect width="900" height="250" fill="white"/>
+  <path d="M112 30 L190 58 L190 116 C190 169 155 199 112 220 C69 199 34 169 34 116 L34 58 Z" fill="#3e4650"/>
+  <path d="M112 53 L167 73 L167 116 C167 151 145 176 112 194 C79 176 57 151 57 116 L57 73 Z" fill="white"/>
+  <path d="M111 77 L128 112 L166 117 L138 142 L146 180 L112 161 L78 180 L86 142 L58 117 L96 112 Z" fill="#3e4650"/>
+  <text x="225" y="128" fill="#3e4650" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="700" letter-spacing="3">CONTROLE</text>
+  <text x="229" y="184" fill="#59636e" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600" letter-spacing="8">SEGURANÇA E ACESSO</text>
+</svg>

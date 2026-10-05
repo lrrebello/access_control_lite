@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from io import BytesIO
+import os
 
-from flask import render_template, request, send_file
+from flask import current_app, render_template, request, send_file
 from xhtml2pdf import pisa
 
 from app.models import AccessLog
@@ -20,10 +21,14 @@ def report_pdf():
         end = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
         query = query.filter(AccessLog.entry_time < end)
 
-    logs = query.order_by(AccessLog.entry_time.asc()).all()
+    logs = query.order_by(AccessLog.entry_time.desc()).all()
     html = render_template(
         'reports/pdf_lite.html', logs=logs, now=datetime.now(),
-        start_date=start_date, end_date=end_date
+        start_date=start_date, end_date=end_date,
+        logo_path=os.path.join(current_app.root_path, 'static', 'logo_2045_pb.png'),
+        client_name=request.args.get('client', '').strip(),
+        location_name=request.args.get('location', '').strip(),
+        shift=request.args.get('shift', '').strip(),
     )
     output = BytesIO()
     result = pisa.pisaDocument(BytesIO(html.encode('utf-8')), dest=output)
@@ -32,4 +37,4 @@ def report_pdf():
 
     output.seek(0)
     filename = f'relatorio_acessos_{datetime.now():%Y%m%d_%H%M}.pdf'
-    return send_file(output, as_attachment=False, download_name=filename, mimetype='application/pdf')
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/pdf')
